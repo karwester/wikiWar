@@ -23,10 +23,8 @@ def fetch_war_information(uri):
     ?isReligious 
     ?isCivil
         WHERE {
-        BIND({{uri}} as ?event)
+        BIND(uri as ?event)
         ?event wdt:P31 ?instanceOf.
-        ?instanceOf rdfs:label ?isCivilLabel.
-        FILTER(LANG(?isCivilLabel) = "en")
         BIND(IF(?instanceOf = wd:Q8465, "yes", "no") AS ?isCivil)
         BIND(IF(?instanceOf = wd:Q1827102, "yes", "no") AS ?isReligious)
         
@@ -62,10 +60,8 @@ def fetch_war_information(uri):
 
 """
 ##LIMIT 100
-    #query_get_wars_info = query_get_wars_info.replace('{{uri}}', uri)
-    query_get_wars_info = query_get_wars_info.format(uri=uri)
+    query_get_wars_info = query_get_wars_info.replace('uri', uri)  # Replace 'uri' with the actual URI value
     sparql.setQuery(query_get_wars_info)
-    
     sparql.setReturnFormat(JSON)
 
 
@@ -83,7 +79,9 @@ file_path = r"C:\Users\karol\projects\wikiWar\war_uris.csv"
 #     for row in reader:
 #         war_uri = row[0]
 #         war_label = row[1]
-
+#         the uri needs to be in this format: 'wd:Q10859'
+#         war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
+#         war_uri = 'wd:'+war_uri
 #         # Call the function to fetch information for each war
 #         fetch_war_information(war_uri)
 
@@ -97,6 +95,8 @@ with open(file_path, mode='r', encoding='utf-8') as file:
     # Read the first two rows using islice
     for row in islice(reader, 2):
         war_uri, war_label = row[:2]
-
+        war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
+        war_uri = 'wd:'+war_uri
+        print(war_uri)
         # Call the function to fetch information for each war
         print(fetch_war_information(war_uri))
