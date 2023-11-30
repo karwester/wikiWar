@@ -67,36 +67,53 @@ def fetch_war_information(uri):
 
 # Fetching the list of wars
     results = sparql.query().convert()
-
+    print(type(results))
     return results
 
-# Read the previously saved CSV file with war URIs and labels
+####################################################################
+
+
 file_path = r"C:\Users\karol\projects\wikiWar\war_uris.csv"
-# with open(file_path, mode='r', encoding='utf-8') as file:
-#     reader = csv.reader(file)
-#     next(reader)  # Skip header row
-
-#     for row in reader:
-#         war_uri = row[0]
-#         war_label = row[1]
-#         the uri needs to be in this format: 'wd:Q10859'
-#         war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
-#         war_uri = 'wd:'+war_uri
-#         # Call the function to fetch information for each war
-#         fetch_war_information(war_uri)
-
-from itertools import islice
-
-
+file_path_data = r"C:\Users\karol\projects\wikiWar\war_data_all12245.csv"
+# 1 open csv with uris and read them one by one
 with open(file_path, mode='r', encoding='utf-8') as file:
     reader = csv.reader(file)
     next(reader)  # Skip header row
-
-    # Read the first two rows using islice
-    for row in islice(reader, 2):
-        war_uri, war_label = row[:2]
+    count = 0  # Initialize a counter
+    
+    for row in reader:
+        if count >= 10:  # Check if 10 rows have been processed
+            break  # If 10 rows have been processed, exit the loop
+        
+        war_uri = row[0]
+        war_label = row[1]
         war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
         war_uri = 'wd:'+war_uri
-        print(war_uri)
-        # Call the function to fetch information for each war
-        print(fetch_war_information(war_uri))
+        
+        jsonInput = fetch_war_information(war_uri)
+        
+        keys = jsonInput['head']['vars']  # Define 'keys' within this scope
+        
+        with open(file_path_data, 'a', newline='', encoding='utf-8') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=keys)
+            
+            # Check if the file is empty
+            is_empty = csvfile.tell() == 0
+            
+            # If the file is empty, write the header row
+            if is_empty:
+                writer.writeheader()
+            
+            row_data = {}
+            for key in keys:
+                values = list(set(entry.get(key, {}).get('value', None) for entry in jsonInput['results']['bindings']))
+                if len(values) > 1:
+                    row_data[key] = ', '.join(values)
+                elif len(values) == 1:
+                    row_data[key] = values[0]
+                else:
+                    row_data[key] = None
+            
+            writer.writerow(row_data)
+        
+        count += 1  # Increment the counter after processing each row
