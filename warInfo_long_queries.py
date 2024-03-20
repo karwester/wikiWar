@@ -4,6 +4,28 @@ import time
 import requests
 from urllib.error import HTTPError
 
+#########################################
+'''
+This script collects war information from wikidata via a sparql query.
+
+
+It collects limited info for queries that time out:
+wd:Q110999040
+wd:Q110999040
+
+'''
+#########################################
+# Function to check if URI exists in a file
+def uri_exists(uri, file_path):
+    #wd:Q10859
+    uri_clean = uri.split(':')[-1]
+    with open(file_path, mode='r', encoding='utf-8') as file:
+        reader = csv.reader(file)
+        for row in reader:
+            uri_from_list = row[0].rsplit('/', 1)[-1]
+            if row and uri_clean == uri_from_list:  # Assuming URI is in the first column
+                return True
+    return False
 
 #example uri wd:Q10859
 def fetch_war_information(uri):
@@ -18,8 +40,8 @@ def fetch_war_information(uri):
     ?countryLabel 
     ?locationLabel 
     ?participantLabel 
-    ?biggerWarInstanceLabel 
-    ?smallerWarInstanceLabel 
+    \\?biggerWarInstanceLabel 
+    \\?smallerWarInstanceLabel 
     ?casualties 
     ?isReligious 
     ?isCivil
@@ -45,14 +67,17 @@ def fetch_war_information(uri):
             ?event wdt:P710 ?participant.
             ?participant rdfs:label ?participantLabel FILTER (lang(?participantLabel) = "en").
         }
+\\\
         OPTIONAL {
             ?event wdt:P361 ?biggerWarInstance.
             ?biggerWarInstance rdfs:label ?biggerWarInstanceLabel FILTER (lang(?biggerWarInstanceLabel) = "en").
         }
+
         OPTIONAL {
             ?smallerWarInstance wdt:P361 ?event.
             ?smallerWarInstance rdfs:label ?smallerWarInstanceLabel FILTER (lang(?smallerWarInstanceLabel) = "en").
         }
+\\\        
         OPTIONAL { ?event wdt:P1120 ?casualties. }  # Casualties (optional)
         
         SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],en". }
@@ -99,17 +124,21 @@ file_path = r"C:\Users\karol\projects\wikiWar\war_uris.csv"
 file_path_data = r"C:\Users\karol\projects\wikiWar\war_data_all1234.csv"
 
 
-with open(file_path, mode='r', encoding='utf-8') as file:
-    reader = csv.reader(file)
-    next(reader)  # Skip header row
+# with open(file_path, mode='r', encoding='utf-8') as file:
+#     reader = csv.reader(file)
+#     next(reader)  # Skip header row
     
-    for row in reader:
-        war_uri = row[0]
-        war_label = row[1]
-        war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
-        war_uri = 'wd:' + war_uri
+#     for row in reader:
+#         war_uri = row[0]
+#         war_label = row[1]
+#         war_uri = war_uri.rsplit('/', 1)[-1]  # Split at the last '/' and get the last part
+#         war_uri = 'wd:' + war_uri
         
+uri_list =['wd:Q110999040','wd:Q110999040']
+for war_uri in uri_list:
+    if not uri_exists(war_uri, file_path_data):  # Check if URI exists in the file
         retries = 3  # Number of retries
+            
         for attempt in range(retries):
             jsonInput = fetch_war_information(war_uri)
             
